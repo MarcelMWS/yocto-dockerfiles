@@ -16,8 +16,13 @@
 
 FROM ubuntu:14.04
 
-RUN apt-get update && \
-    apt-get install -y \
+RUN apt-get update -qq && \
+    apt-get install -qqy \
+        apt-transport-https \
+        ca-certificates \
+        curl \
+        lxc \
+        iptables \
         gawk \
         wget \
         git-core \
@@ -45,12 +50,13 @@ RUN apt-get update && \
     chmod 0600 /etc/vncskel/.vnc/passwd && \
     useradd -U -m yoctouser && \
     /usr/sbin/locale-gen en_US.UTF-8
+# Install Docker from Docker Inc. repositories.
+RUN curl -sSL https://get.docker.com/ | sh
 
-COPY build-install-dumb-init.sh /
-RUN  bash /build-install-dumb-init.sh && \
-     rm /build-install-dumb-init.sh && \
-     apt-get clean
+# Install the magic wrapper.
+ADD ./wrapdocker /usr/local/bin/wrapdocker
+RUN chmod +x /usr/local/bin/wrapdocker
 
-USER yoctouser
-WORKDIR /home/yoctouser
-CMD /bin/bash
+# Define additional metadata for our image.
+VOLUME /var/lib/docker
+CMD ["wrapdocker"]
